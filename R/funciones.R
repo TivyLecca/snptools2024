@@ -1,5 +1,3 @@
-
-
 get_longitud_2=
   function (x)
   {
