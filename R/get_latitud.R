@@ -1,0 +1,17 @@
+get_latitud <- function(x){
+  x <- as.character(x)
+  lat <- substring(x, 1,2)
+  lat <- as.numeric(lat)
+  min <- substring(x, 4,5)
+  min <- as.numeric(min)
+  seg <- substring(x, 7, 11)
+  seg <- as.numeric(seg)
+
+  lat[is.na(lat)] <- 0
+  min[is.na(min)] <- 0
+  seg[is.na(seg)] <- 0
+
+  out <- (lat + (min + seg/60)/60)*-1
+
+  return(suppressWarnings(out))
+}

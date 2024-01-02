@@ -1,0 +1,82 @@
+.navbar {
+  margin: 0;
+  padding: 0;
+  height: 100px;
+  width: 100%;
+  background-color: pink; ## fondo de cabezera
+  border-color:black; ## borde cabezera
+}
+
+.navbar-brand {
+   font-size: 35px;
+   font-family: Lucida Handwriting;
+   padding: 10px 10px 10px 250px;
+   line-height: 21px;
+   height: 50px;
+   color: black !important; ## color de letra en la cabezera, pero fijo
+}
+
+.nav-link{
+   font-size: 20px;
+}
+
+.dataTables_scrollBody {
+    height:600px !important;
+    max-height:600px !important;
+    background-color : white;
+}
+
+
+body {
+  background-color: seashell;
+  color: black; /* text color */
+}
+
+.dataTables_wrapper {
+  background-color: white;
+  color: black; /* text color */
+}
+
+ .dataTables_scroll {
+  background-color: white;
+  color: black; /* text color */
+}
+
+
+ div.dataTables_scrollBody {
+  background-color: white;
+  color: black; /* text color */
+}
+
+/* Selección */
+.navbar-inverse .navbar-nav>.active > a, 
+.navbar-inverse .navbar-nav>.active > a:hover, 
+.navbar-inverse .navbar-nav>.active > a:focus {
+  color:  black !important;
+  background-color: darkgrey !important;
+}
+
+
+/* Mover Mouse */
+.navbar-inverse .navbar-nav > li > a:hover,
+.navbar-inverse .navbar-nav > li > a:focus {
+    background-color: darkgrey !important;
+    color: black !important;
+}
+
+
+.navbar-inverse .navbar-nav>li>a, 
+.navbar .navbar-brand {
+    text-decoration: none;
+    color: black;
+}
+
+
+
+.dropdown-menu>.active>a, .dropdown-menu>.active>a:hover, .dropdown-menu>.active>a:focus {
+    color: black;
+    text-decoration: none;
+    outline: 0;
+    background-color: darkgrey;
+
+}

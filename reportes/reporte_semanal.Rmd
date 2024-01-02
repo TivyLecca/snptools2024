@@ -1,0 +1,1948 @@
+---
+title: "`r params$doc_title`"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+    css: "style.css"
+    includes:
+      after_body: footer.html
+    
+params:
+  temporada : "2022-II"
+  temporada_2 : "2021-II"
+  color_esfuerzo : "tomato1" # purple3 tomato4royalblue1
+  color_esfuerzo_2 : "royalblue1" # royalblue1 tomato4
+  color_cpue : "tomato1" #'black' 'darkslategray4' darkorange2
+  color_cpue_2 : "royalblue1" #'black' 'darkslategray4'
+  color_indicadores : "chartreuse4" #'maroon' 'blue2' 'yellow4' 'darkgoldenrod1' 'steelblue1'
+  color_indicadores_2 : "blue2" #'maroon' 'blue2' 'yellow4' 'darkgoldenrod1' 'steelblue1'
+  paso_dias : 3
+  marker_size : 10
+  legend_size : 16
+  areas : FALSE
+  n_decimales : 2
+  carpeta_indicadores : "H:/.shortcut-targets-by-id/1Y-zd3BCw35q05RN7fix9Vo7fdH8mFpmu/DATOS/INDICADORES/semanales"
+  carpeta_trayectorias : "H:/.shortcut-targets-by-id/1Y-zd3BCw35q05RN7fix9Vo7fdH8mFpmu/DATOS/TRAYECTORIAS/"
+  carpeta_calas : "H:/.shortcut-targets-by-id/1Y-zd3BCw35q05RN7fix9Vo7fdH8mFpmu/DATOS/CALAS/"
+  doc_title : "Reporte - II Temporada de Pesca 2022 - NC"
+
+---
+
+
+```{r setup, include=FALSE}
+
+require(flexdashboard)
+require(tidyverse)
+require(plotly)
+require(DT)
+
+### Temporadas
+
+temporada_1 = load(file = file.path(params$carpeta_indicadores,paste0(params$temporada,".RData")))
+
+current_temp = get(temporada_1)
+
+rownames(current_temp) = NULL
+
+if(!is.null(params$temporada_2)){
+  
+  temporada_2 = load(file = file.path(params$carpeta_indicadores,paste0(params$temporada_2,".RData")))
+
+  current_temp_2 = get(temporada_2)
+  
+  rownames(current_temp_2) = NULL
+
+}
+
+### Calas
+
+
+calas_1 = load(file = file.path(params$carpeta_calas,paste0(params$temporada,".RData")))
+
+current_calas = get(calas_1)
+
+rownames(current_calas) = NULL
+
+### Trayectorias
+
+
+trayectorias_1 = load(file = file.path(params$carpeta_trayectorias,paste0(params$temporada,".RData")))
+
+current_trayectorias = get(trayectorias_1)
+
+rownames(current_trayectorias) = NULL
+
+```
+
+
+
+# Plot Diarios{data-orientation=columns data-navmenu="DESEMBARQUES"}
+
+Rows
+-------------------------------------
+
+###
+```{r, fig.width=4, fig.height=5}
+
+
+current_temp %>% 
+  plot_ly(x = ~semana) %>%
+  add_trace(y = ~captura,
+            type = 'bar', 
+            color = I('dodgerblue'), 
+            name = paste0("Desembarques (t)"), 
+            yaxis = "y",
+            marker = list(opacity = 0.5)) %>%
+  add_trace(y = ~viajes, 
+            type = 'scatter',
+            mode = 'lines+markers', 
+            color = I('black'), 
+            name = paste0("Viajes"), 
+            yaxis='y2', 
+            marker = list(size = params$marker_size, opacity = 0.5), 
+            line  = list(opacity = 0.5)) %>%
+  layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(current_temp$semana, na.rm = TRUE)-1,max(current_temp$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Desembarques (t)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(current_temp$captura, na.rm = TRUE)*1.4)
+  ),
+    yaxis2 = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Viajes", font = list(size = 20)),
+      overlaying = "y", 
+      side = "right",
+      ticks = "outside", 
+      range = c(0, max(current_temp$viajes, na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(size = params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)'),
+
+      margin = list(
+        l = 100,
+        r = 100,
+        b = 50,
+        t = 50
+  )
+)
+
+
+
+```
+
+
+###
+```{r, fig.width=4, fig.height=5}
+
+
+desembarques_fabricas = current_temp %>% 
+  dplyr::select(semana, captura_AUSTRAL, captura_CAPRICORNIO, captura_CENTINELA, captura_CFG, captura_DIAMANTE, captura_EXALMAR, captura_HAYDUK, captura_TASA) %>% 
+  dplyr::mutate(dia = 1:n()) %>% 
+  pivot_longer(., cols = 2:9, names_to = c("empresa"), values_to = "catch_1") %>%
+  mutate(id = gsub("captura_", "",empresa))
+
+
+desembarques_fabricas %>%
+   mutate(across(where(is.numeric), ~na_if(., 0))) %>% arrange(semana) %>% 
+  plot_ly(x = ~semana) %>%
+  add_trace(y = ~catch_1,
+            type = "bar",
+            color = paste0(desembarques_fabricas$id),
+            marker = list(opacity = 0.5),
+            name = paste0(desembarques_fabricas$id))%>%
+  layout(barmode = "stack", 
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(desembarques_fabricas$semana, na.rm = TRUE)-1,max(desembarques_fabricas$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Desembarques (t)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(current_temp$captura, na.rm = TRUE)*1.2)
+  ),
+  legend = list(font = list(size = params$legend_size - 2), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)', 
+                orientation = "h")
+)
+
+
+
+
+
+```
+
+
+Rows
+-------------------------------------
+
+###
+```{r, fig.width=4, fig.height=5}
+
+
+if(!is.null(params$temporada_2)){
+  
+desembarques_acumulativos = merge(current_temp %>% 
+                                    dplyr::select(semana, captura) %>% 
+                                    rlang::set_names(.,c("semana","cap_temp_1")) %>% 
+                                    dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(captura) %>% 
+                       rlang::set_names(.,c("cap_temp_2")) %>% 
+                       dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE) %>% 
+  mutate(cumsum_1 = cumsumNA(cap_temp_1), cumsum_2 = cumsumNA(cap_temp_2))
+
+
+
+figacum = desembarques_acumulativos %>% 
+  plot_ly(x = ~semana) %>%
+  add_trace(y = ~cumsum_1,
+            type = 'scatter', 
+            mode = 'lines+markers',
+            color = I('dodgerblue'), 
+            name = paste0(params$temporada),
+            marker = list(opacity = 0.5)) %>%
+  add_trace(y = ~cumsum_2,
+            type = 'scatter', 
+            mode = 'lines+markers',
+            color = I('orange'), 
+            name = paste0(params$temporada_2), 
+            marker = list(opacity = 0.5)) %>%
+  layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(desembarques_acumulativos$semana, na.rm = TRUE)-1,max(desembarques_acumulativos$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Desembarques acumulados (t)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(desembarques_acumulativos$cumsum_1, desembarques_acumulativos$cumsum_2), na.rm = TRUE)*1.3)
+  ),
+  legend = list(font = list(size = params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  desembarques_acumulativos = current_temp %>% 
+    dplyr::select(semana, captura) %>% 
+    rlang::set_names(.,c("semana","cap_temp_1")) %>%
+  mutate(cumsum_1 = cumsumNA(cap_temp_1))
+
+
+
+figacum = desembarques_acumulativos %>% 
+  plot_ly(x = ~semana) %>%
+  add_trace(y = ~cumsum_1,
+            type = 'scatter', 
+            mode = 'lines+markers',
+            color = I('dodgerblue'), 
+            name = paste0(params$temporada),
+            marker = list(opacity = 0.5)) %>%
+  layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(desembarques_acumulativos$semana, na.rm = TRUE)-1,max(desembarques_acumulativos$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Desembarques acumulados (t)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(desembarques_acumulativos$cumsum_1), na.rm = TRUE)*1.3)
+  ),
+  legend = list(font = list(size = params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+
+figacum
+
+
+
+
+
+```
+
+
+###
+```{r, fig.width=4, fig.height=5}
+
+desembarques_fabricas_acumulados = current_temp %>% 
+  dplyr::select(semana, captura_AUSTRAL, captura_CAPRICORNIO, captura_CENTINELA, captura_CFG, captura_DIAMANTE, captura_EXALMAR, captura_HAYDUK, captura_TASA) %>% 
+  dplyr::mutate(dia = 1:n()) %>% 
+  pivot_longer(., cols = 2:9, names_to = c("empresa"), values_to = "catch_1")  %>%
+  mutate(id = gsub("captura_", "",empresa))  %>% arrange(semana) %>% group_by(id) %>% mutate(cumsum_1 = cumsumNA(catch_1))
+
+
+desembarques_fabricas_acumulados %>%
+   mutate(across(where(is.numeric), ~na_if(., 0))) %>% arrange(semana) %>% 
+  plot_ly(x = ~semana) %>%
+  add_trace(y = ~cumsum_1,
+            type = "scatter",
+            mode = 'lines+markers', 
+            color = paste0(desembarques_fabricas$id),
+            marker = list(opacity = 0.5),
+            name = paste0(desembarques_fabricas$id)) %>%
+  layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(desembarques_fabricas_acumulados$semana, na.rm = TRUE)-1,max(desembarques_fabricas_acumulados$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Desembarques acumulados (t)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(desembarques_fabricas_acumulados$cumsum_1, na.rm = TRUE)*1.2)
+  ),
+  legend = list(font = list(size = params$legend_size - 2), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)', 
+                orientation = "h")
+)
+
+
+
+```
+
+
+
+# Descarga Data{data-navmenu="DESEMBARQUES"}
+
+Rows
+-------------------------------------
+### 
+```{r}
+
+current_temp %>% select(temporada, semana, captura, viajes) %>%
+  mutate(captura_acumulada = cumsumNA(captura)) %>% set_names(.,c("temporada","semana", "desembarque", "viajes","desembarque_acumulado"))%>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+```
+
+###
+
+```{r}
+
+if(!is.null(params$temporada_2)){
+
+current_temp_2 %>% select(temporada, semana, captura, viajes) %>%
+  mutate(captura_acumulada = cumsumNA(captura)) %>% set_names(.,c("temporada","semana", "desembarque", "viajes","desembarque_acumulado"))%>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+}
+```
+
+
+# Plot{data-orientation=rows data-navmenu="ESFUERZO"}
+
+
+Column
+-------------------------------------
+
+### 
+```{r, fig.width=4, fig.height=3}
+## ESFUERZO DURACION
+
+if(!is.null(params$temporada_2)){
+
+  esfuerzo_duracion = merge(current_temp %>% dplyr::select(semana, duracion) %>% rlang::set_names(.,c("semana","dur_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(duracion) %>% rlang::set_names(.,c("dur_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig3 <- plot_ly(esfuerzo_duracion) %>%
+  add_trace(x = ~semana, y = ~dur_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada))%>%
+  add_trace(x = ~semana, y = ~dur_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2))%>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_duracion$semana, na.rm = TRUE)-1,max(esfuerzo_duracion$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Duración (h)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(esfuerzo_duracion$dur_temp_1, esfuerzo_duracion$dur_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(size = params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+    
+} else{
+  
+    esfuerzo_duracion = current_temp %>% dplyr::select(semana, duracion) %>% rlang::set_names(.,c("semana","dur_temp_1")) 
+
+
+fig3 <- plot_ly(esfuerzo_duracion) %>%
+  add_trace(x = ~semana, y = ~dur_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada))%>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_duracion$semana, na.rm = TRUE)-1,max(esfuerzo_duracion$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Duración (h)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(esfuerzo_duracion$dur_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(size = params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+
+
+
+
+fig3
+
+```
+
+
+###
+
+```{r, fig.width=4, fig.height=3}
+## ESFUERZO BODEGA
+
+if(!is.null(params$temporada_2)){
+  
+esfuerzo_bodega = merge(current_temp %>% dplyr::mutate(bodega_mean = bodega/viajes) %>% dplyr::select(semana, bodega_mean) %>% rlang::set_names(.,c("semana","bodega_mean_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::mutate(bodega_mean = bodega/viajes) %>% dplyr::select(bodega_mean) %>% rlang::set_names(.,c("bodega_mean_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig5 <- plot_ly(esfuerzo_bodega) %>%
+  add_trace(x = ~semana, y = ~bodega_mean_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~bodega_mean_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2))%>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_bodega$semana, na.rm = TRUE)-1,max(esfuerzo_bodega$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Bodega (m^3)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0,  max(c(esfuerzo_bodega$bodega_mean_temp_1,esfuerzo_bodega$bodega_mean_temp_2), na.rm = TRUE)*1.2)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+
+} else{
+  
+  esfuerzo_bodega = current_temp %>% dplyr::mutate(bodega_mean = bodega/viajes) %>% dplyr::select(semana, bodega_mean) %>% rlang::set_names(.,c("semana","bodega_mean_temp_1")) 
+
+
+fig5 <- plot_ly(esfuerzo_bodega) %>%
+  add_trace(x = ~semana, y = ~bodega_mean_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_bodega$semana, na.rm = TRUE)-1,max(esfuerzo_bodega$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Bodega (m^3)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0,  max(c(esfuerzo_bodega$bodega_mean_temp_1), na.rm = TRUE)*1.2)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+fig5
+
+```
+
+
+Row
+-------------------------------------
+
+###
+```{r, fig.width=4, fig.height=3}
+## ESFUERZO RECORRIDO
+
+if(!is.null(params$temporada_2)){
+
+esfuerzo_recorrido = merge(current_temp %>% dplyr::select(semana, recorrido_medio) %>% rlang::set_names(.,c("semana","recorrido_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(recorrido_medio) %>% rlang::set_names(.,c("recorrido_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+
+fig7 <- plot_ly(esfuerzo_recorrido) %>%
+  add_trace(x = ~semana, y = ~recorrido_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~recorrido_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_recorrido$semana, na.rm = TRUE)-1,max(esfuerzo_recorrido$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Recorrido (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(esfuerzo_recorrido$recorrido_temp_1,esfuerzo_recorrido$recorrido_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  esfuerzo_recorrido = current_temp %>% dplyr::select(semana, recorrido_medio) %>% rlang::set_names(.,c("semana","recorrido_temp_1"))
+
+
+
+fig7 <- plot_ly(esfuerzo_recorrido) %>%
+  add_trace(x = ~semana, y = ~recorrido_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_recorrido$semana, na.rm = TRUE)-1,max(esfuerzo_recorrido$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Recorrido (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(esfuerzo_recorrido$recorrido_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+  
+}
+
+fig7
+
+
+```
+
+
+
+### 
+```{r, fig.width=4, fig.height=3}
+## ESFUERZO LANCE
+
+if(!is.null(params$temporada_2)){
+
+esfuerzo_lance = merge(current_temp %>% dplyr::select(semana, lances) %>% rlang::set_names(.,c("semana","lances_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(lances) %>% rlang::set_names(.,c("lances_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+
+fig9 <- plot_ly(esfuerzo_lance) %>%
+  add_trace(x = ~semana, y = ~lances_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~lances_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_lance$semana, na.rm = TRUE)-1,max(esfuerzo_lance$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Lances", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(esfuerzo_lance$lances_temp_1,esfuerzo_lance$lances_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+}else {
+  
+  esfuerzo_lance = current_temp %>% dplyr::select(semana, lances) %>% rlang::set_names(.,c("semana","lances_temp_1"))
+
+
+
+fig9 <- plot_ly(esfuerzo_lance) %>%
+  add_trace(x = ~semana, y = ~lances_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_esfuerzo), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(esfuerzo_lance$semana, na.rm = TRUE)-1,max(esfuerzo_lance$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Lances", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(esfuerzo_lance$lances_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+fig9
+
+```
+
+# Descarga Data{data-navmenu="ESFUERZO"}
+
+Rows
+-------------------------------------
+### 
+```{r}
+
+current_temp %>% mutate(bodega_media = round(bodega/viajes, params$n_decimales), 
+                        duracion = round(duracion, params$n_decimales),
+                        recorrido_medio  = round(recorrido_medio, params$n_decimales), 
+                        lances = round(lances, params$n_decimales)) %>% 
+  select(temporada, semana, duracion, bodega_media, recorrido_medio, lances) %>% 
+  set_names(., c("temporada","semana","duracion","bodega","recorrido medio", "lances")) %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+```
+
+###
+
+```{r}
+
+if(!is.null(params$temporada_2)){
+
+current_temp_2 %>% mutate(bodega_media = round(bodega/viajes, params$n_decimales), 
+                        duracion = round(duracion, params$n_decimales),
+                        recorrido_medio  = round(recorrido_medio, params$n_decimales), 
+                        lances = round(lances, params$n_decimales)) %>% 
+  select(temporada, semana, duracion, bodega_media, recorrido_medio, lances) %>% 
+  set_names(., c("temporada","semana","duracion","bodega","recorrido medio", "lances")) %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+}
+  
+```
+
+#  Plot{data-orientation=rows data-navmenu="CPUE"}
+
+Row
+-------------------------------------
+
+###
+```{r, fig.width=4, fig.height=3}
+
+## CPUE DURACION
+
+if(!is.null(params$temporada_2)){
+
+cpue_duracion = merge(current_temp %>% dplyr::select(semana, cpue_dur) %>% rlang::set_names(.,c("semana","cpue_dur_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(cpue_dur) %>% rlang::set_names(.,c("cpue_dur_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig4 <- plot_ly(cpue_duracion) %>%
+  add_trace(x = ~semana, y = ~cpue_dur_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~cpue_dur_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2))%>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_duracion$semana, na.rm = TRUE)-1,max(cpue_duracion$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/h)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_duracion$cpue_dur_temp_1,cpue_duracion$cpue_dur_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  cpue_duracion = current_temp %>% dplyr::select(semana, cpue_dur) %>% rlang::set_names(.,c("semana","cpue_dur_temp_1")) 
+
+
+fig4 <- plot_ly(cpue_duracion) %>%
+  add_trace(x = ~semana, y = ~cpue_dur_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_duracion$semana, na.rm = TRUE)-1,max(cpue_duracion$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/h)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_duracion$cpue_dur_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+  
+}
+
+fig4
+
+```
+
+###
+```{r, fig.width=4, fig.height=3}
+
+## CPUE BODEGA
+
+if(!is.null(params$temporada_2)){
+
+cpue_bodega = merge(current_temp %>% dplyr::select(semana, cpue_bod) %>% rlang::set_names(.,c("semana","cpue_bod_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(cpue_bod) %>% rlang::set_names(.,c("cpue_bod_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+
+fig6 <- plot_ly(cpue_bodega) %>%
+  add_trace(x = ~semana, y = ~cpue_bod_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~cpue_bod_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2))%>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_bodega$semana, na.rm = TRUE)-1,max(cpue_bodega$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/m^3)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_bodega$cpue_bod_temp_1,cpue_bodega$cpue_bod_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  cpue_bodega = current_temp %>% dplyr::select(semana, cpue_bod) %>% rlang::set_names(.,c("semana","cpue_bod_temp_1")) 
+
+
+
+fig6 <- plot_ly(cpue_bodega) %>%
+  add_trace(x = ~semana, y = ~cpue_bod_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_bodega$semana, na.rm = TRUE)-1,max(cpue_bodega$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/m^3)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_bodega$cpue_bod_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+
+fig6
+
+```
+
+Column
+-------------------------------------
+
+###
+```{r, fig.width=4, fig.height=3}
+
+## CPUE RECORRIDO
+
+if(!is.null(params$temporada_2)){
+
+cpue_rec = merge(current_temp %>% dplyr::select(semana, cpue_rec) %>% rlang::set_names(.,c("semana","cpue_rec_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(cpue_rec) %>% rlang::set_names(.,c("cpue_rec_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig8 <- plot_ly(cpue_rec) %>%
+  add_trace(x = ~semana, y = ~cpue_rec_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~cpue_rec_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_rec$semana, na.rm = TRUE)-1,max(cpue_rec$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_rec$cpue_rec_temp_1,cpue_rec$cpue_rec_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  cpue_rec = current_temp %>% dplyr::select(semana, cpue_rec) %>% rlang::set_names(.,c("semana","cpue_rec_temp_1")) 
+
+
+fig8 <- plot_ly(cpue_rec) %>%
+  add_trace(x = ~semana, y = ~cpue_rec_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_rec$semana, na.rm = TRUE)-1,max(cpue_rec$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_rec$cpue_rec_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+  
+  
+}
+fig8
+
+```
+
+###
+```{r, fig.width=4, fig.height=3}
+
+## CPUE LANCE
+
+if(!is.null(params$temporada_2)){
+
+cpue_lance = merge(current_temp %>% dplyr::select(semana, cpue_lan) %>% rlang::set_names(.,c("semana","cpue_lan_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(cpue_lan) %>% rlang::set_names(.,c("cpue_lan_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+
+fig10 <- plot_ly(cpue_lance) %>%
+  add_trace(x = ~semana, y = ~cpue_lan_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada))  %>%
+  add_trace(x = ~semana, y = ~cpue_lan_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_lance$semana, na.rm = TRUE)-1,max(cpue_lance$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/lance)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_lance$cpue_lan_temp_1,cpue_lance$cpue_lan_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  cpue_lance = current_temp %>% dplyr::select(semana, cpue_lan) %>% rlang::set_names(.,c("semana","cpue_lan_temp_1")) 
+
+
+
+fig10 <- plot_ly(cpue_lance) %>%
+  add_trace(x = ~semana, y = ~cpue_lan_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_cpue), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(cpue_lance$semana, na.rm = TRUE)-1,max(cpue_lance$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "CPUE (t/lance)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(cpue_lance$cpue_lan_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+
+
+
+
+fig10
+```
+
+
+
+#  Descarga Data{data-navmenu="CPUE"}
+
+Rows
+-------------------------------------
+
+###
+```{r}
+
+current_temp %>% mutate(cpue_dur = round(cpue_dur, params$n_decimales), 
+                        cpue_lan = round(cpue_lan, params$n_decimales), 
+                        cpue_rec = round(cpue_rec, params$n_decimales), 
+                        cpue_bod = round(cpue_bod, params$n_decimales)) %>% 
+  select(temporada, semana, cpue_dur, cpue_lan, cpue_rec, cpue_bod) %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+
+```
+
+###
+```{r}
+
+if(!is.null(params$temporada_2)){
+
+current_temp_2 %>% mutate(cpue_dur = round(cpue_dur, params$n_decimales), 
+                        cpue_lan = round(cpue_lan, params$n_decimales), 
+                        cpue_rec = round(cpue_rec, params$n_decimales), 
+                        cpue_bod = round(cpue_bod, params$n_decimales)) %>% 
+  select(temporada, semana, cpue_dur, cpue_lan, cpue_rec, cpue_bod) %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+}
+```
+
+
+#  Plot{data-orientation=rows data-navmenu="INDICADORES ESPACIALES"}
+
+
+Row
+-------------------------------------
+###
+```{r, fig.width=4, fig.height=3}
+
+if(!is.null(params$temporada_2)){
+
+indi_area = merge(current_temp %>% dplyr::select(semana, area_pesca) %>% rlang::set_names(.,c("semana","area_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(area_pesca) %>% rlang::set_names(.,c("area_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+
+fig11 <- plot_ly(indi_area) %>%
+  add_trace(x = ~semana, y = ~area_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~area_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_area$semana, na.rm = TRUE)-1,max(indi_area$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Área Pesca (mn^2)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_area$area_temp_1,indi_area$area_temp_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  indi_area = current_temp %>% dplyr::select(semana, area_pesca) %>% rlang::set_names(.,c("semana","area_temp_1")) 
+
+
+fig11 <- plot_ly(indi_area) %>%
+  add_trace(x = ~semana, y = ~area_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada))  %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_area$semana, na.rm = TRUE)-1,max(indi_area$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Área Pesca (mn^2)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_area$area_temp_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+fig11
+
+```
+
+###
+```{r, fig.width=4, fig.height=4}
+
+if(!is.null(params$temporada_2)){
+
+indi_inercia = merge(current_temp %>% dplyr::select(semana, inercia_espacial) %>% rlang::set_names(.,c("semana","inercia_espacial_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(inercia_espacial) %>% rlang::set_names(.,c("inercia_espacial_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig16 <- plot_ly(indi_inercia) %>%
+  add_trace(x = ~semana, y = ~inercia_espacial_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>% 
+  add_trace(x = ~semana, y = ~inercia_espacial_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_inercia$semana, na.rm = TRUE)-1,max(indi_inercia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Inercia Espacial", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_inercia$inercia_espacial_1, indi_inercia$inercia_espacial_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  indi_inercia = current_temp %>% dplyr::select(semana, inercia_espacial) %>% rlang::set_names(.,c("semana","inercia_espacial_1")) 
+
+
+fig16 <- plot_ly(indi_inercia) %>%
+  add_trace(x = ~semana, y = ~inercia_espacial_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_inercia$semana, na.rm = TRUE)-1,max(indi_inercia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Inercia Espacial", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_inercia$inercia_espacial_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+fig16
+
+```
+
+Row
+-------------------------------------
+
+###
+```{r, fig.width=4, fig.height=3}
+
+if(!is.null(params$temporada_2)){
+
+  
+indi_latitud = merge(current_temp %>% dplyr::select(semana, latitud) %>% rlang::set_names(.,c("semana","lat_med_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(latitud) %>% rlang::set_names(.,c("lat_med_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig_lat = plot_ly(indi_latitud)%>%
+  add_trace(x = ~semana, y = ~lat_med_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.3), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~lat_med_temp_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_latitud$semana, na.rm = TRUE)-1,max(indi_latitud$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 12),
+      title = list(text = "Latitud (°S)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(-18,0)
+      
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  
+    
+indi_latitud = current_temp %>% dplyr::select(semana, latitud) %>% rlang::set_names(.,c("semana","lat_med_temp_1")) 
+
+
+fig_lat = plot_ly(indi_latitud)%>%
+  add_trace(x = ~semana, y = ~lat_med_temp_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.3), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_latitud$semana, na.rm = TRUE)-1,max(indi_latitud$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 12),
+      title = list(text = "Latitud (°S)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(-18,0)
+      
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+fig_lat
+```
+
+###
+```{r, fig.width=4, fig.height=3}
+
+if(!is.null(params$temporada_2)){
+
+  
+indi_latitud_max_min = merge(current_temp %>% dplyr::select(semana, cala_latitud_maxima, cala_latitud_min) %>% rlang::set_names(.,c("semana","lat_max_temp_1","lat_min_temp_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(cala_latitud_maxima, cala_latitud_min) %>% rlang::set_names(.,c("lat_max_temp_2","lat_min_temp_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig_lat_rango = plot_ly(indi_latitud_max_min) %>%
+  add_segments(x = ~semana, xend = ~semana, y = ~lat_max_temp_1, yend = ~lat_min_temp_1, color =  I(params$color_indicadores), legendgroup =params$temporada, name = paste0(params$temporada)) %>% 
+  add_markers(x = ~semana, y = ~lat_max_temp_1, color =  I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), legendgroup=params$temporada, showlegend = FALSE) %>%
+  add_markers(x = ~semana, y = ~lat_min_temp_1, color =  I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), legendgroup=params$temporada, showlegend = FALSE) %>%
+  add_segments(x = ~semana, xend = ~semana, y = ~lat_max_temp_2, yend = ~lat_min_temp_2, color =  I(params$color_indicadores_2), legendgroup=params$temporada_2, name = paste0(params$temporada_2)) %>% 
+  add_markers(x = ~semana, y = ~lat_max_temp_2, color =  I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), legendgroup=params$temporada_2, showlegend = FALSE) %>%
+  add_markers(x = ~semana, y = ~lat_min_temp_2, color =  I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), legendgroup= params$temporada_2, showlegend = FALSE) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_latitud_max_min$semana, na.rm = TRUE)-1,max(indi_latitud_max_min$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 12),
+      title = list(text = "Rangos Latitud (°S)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(-18,0)
+      
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  
+  indi_latitud_max_min = current_temp %>% dplyr::select(semana, cala_latitud_maxima, cala_latitud_min) %>% rlang::set_names(.,c("semana","lat_max_temp_1","lat_min_temp_1"))
+
+
+fig_lat_rango = plot_ly(indi_latitud_max_min) %>%
+  add_segments(x = ~semana, xend = ~semana, y = ~lat_max_temp_1, yend = ~lat_min_temp_1, color =  I(params$color_indicadores), legendgroup =params$temporada, name = paste0(params$temporada)) %>% 
+  add_markers(x = ~semana, y = ~lat_max_temp_1, color =  I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), legendgroup=params$temporada, showlegend = FALSE) %>%
+  add_markers(x = ~semana, y = ~lat_min_temp_1, color =  I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), legendgroup=params$temporada, showlegend = FALSE) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_latitud_max_min$semana, na.rm = TRUE)-1,max(indi_latitud_max_min$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 12),
+      title = list(text = "Rangos Latitud (°S)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(-18,0)
+      
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+fig_lat_rango
+
+```
+
+Row
+-------------------------------------
+
+
+###
+```{r, fig.width=4, fig.height=4}
+
+
+if(!is.null(params$temporada_2)){
+
+indi_distancia = merge(current_temp %>% dplyr::select(semana, dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("semana","dist_max_zarpe_1","dist_costa_1","dist_max_aribo_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("dist_max_zarpe_2","dist_costa_2","dist_max_aribo_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig_dist = plot_ly(indi_distancia) %>%
+  add_trace(x = ~semana, y = ~dist_costa_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.3), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~dist_costa_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_distancia$semana, na.rm = TRUE)-1,max(indi_distancia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Distancia Costa (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_distancia$dist_costa_1, indi_distancia$dist_costa_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  indi_distancia = current_temp %>% dplyr::select(semana, dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("semana","dist_max_zarpe_1","dist_costa_1","dist_max_aribo_1")) 
+
+
+fig_dist = plot_ly(indi_distancia) %>%
+  add_trace(x = ~semana, y = ~dist_costa_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.3), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_distancia$semana, na.rm = TRUE)-1,max(indi_distancia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Distancia Costa (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_distancia$dist_costa_1), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+  
+}
+
+fig_dist
+
+```
+
+
+###
+```{r, fig.width=4, fig.height=4}
+
+if(!is.null(params$temporada_2)){
+
+indi_distancia = merge(current_temp %>% dplyr::select(semana, dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("semana","dist_max_zarpe_1","dist_costa_1","dist_max_aribo_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("dist_max_zarpe_2","dist_costa_2","dist_max_aribo_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig_dist_zarpe = plot_ly(indi_distancia) %>%
+  add_trace(x = ~semana, y = ~dist_max_zarpe_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+  add_trace(x = ~semana, y = ~dist_max_zarpe_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_distancia$semana, na.rm = TRUE)-1,max(indi_distancia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Distancia máxima zarpe (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_distancia$dist_max_zarpe_1, indi_distancia$dist_costa_1, indi_distancia$dist_max_aribo_1, indi_distancia$dist_max_zarpe_2, indi_distancia$dist_costa_2, indi_distancia$dist_max_aribo_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  indi_distancia = current_temp %>% dplyr::select(semana, dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("semana","dist_max_zarpe_1","dist_costa_1","dist_max_aribo_1")) 
+
+
+fig_dist_zarpe = plot_ly(indi_distancia) %>%
+  add_trace(x = ~semana, y = ~dist_max_zarpe_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_distancia$semana, na.rm = TRUE)-1,max(indi_distancia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Distancia máxima zarpe (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(indi_distancia$dist_max_zarpe_1, na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+  
+  
+}
+fig_dist_zarpe
+
+```
+Row
+-------------------------------------
+
+###
+```{r, fig.width=4, fig.height=4}
+
+if(!is.null(params$temporada_2)){
+
+indi_distancia = merge(current_temp %>% dplyr::select(semana, dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("semana","dist_max_zarpe_1","dist_costa_1","dist_max_aribo_1")) %>% dplyr::mutate(dia = 1:n()),
+                     current_temp_2 %>% dplyr::select(dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("dist_max_zarpe_2","dist_costa_2","dist_max_aribo_2")) %>% dplyr::mutate(dia = 1:n()), by = "dia", all = TRUE)
+
+
+fig_dist_arribo = plot_ly(indi_distancia) %>% 
+  add_trace(x = ~semana, y = ~dist_max_aribo_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>% 
+  add_trace(x = ~semana, y = ~dist_max_aribo_2, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores_2), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada_2)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_distancia$semana, na.rm = TRUE)-1,max(indi_distancia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Distancia máxima arribo (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(c(indi_distancia$dist_max_zarpe_1, indi_distancia$dist_costa_1, indi_distancia$dist_max_aribo_1, indi_distancia$dist_max_zarpe_2, indi_distancia$dist_costa_2, indi_distancia$dist_max_aribo_2), na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+} else {
+  
+  
+indi_distancia = current_temp %>% dplyr::select(semana, dist_maxima_zarpe, dist_costa, dist_maxima_arribo) %>% rlang::set_names(.,c("semana","dist_max_zarpe_1","dist_costa_1","dist_max_aribo_1")) 
+
+
+fig_dist_arribo = plot_ly(indi_distancia) %>% 
+  add_trace(x = ~semana, y = ~dist_max_aribo_1, type = 'scatter', mode = 'lines+markers', color = I(params$color_indicadores), marker = list(size = params$marker_size, opacity = 0.5), name = paste0(params$temporada)) %>%
+ layout(  
+    xaxis = list(
+      autotick = F, 
+      tickfont = list(family='Rockwell', color='black', size = 18),
+      title = F,
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      range = c(min(indi_distancia$semana, na.rm = TRUE)-1,max(indi_distancia$semana, na.rm = TRUE)+1)), 
+    yaxis = list(
+      tickfont = list(color='black', size = 16),
+      title = list(text = "Distancia máxima arribo (mn)", font = list(size = 20)),
+      showline = TRUE,
+      mirror = "ticks",
+      linecolor = toRGB("black"),
+      linewidth = 2,
+      ticks = "outside", 
+      range = c(0, max(indi_distancia$dist_max_aribo_1, na.rm = TRUE)*1.4)
+  ),
+  legend = list(font = list(params$legend_size), 
+                xanchor = "left", 
+                yanchor = "top", 
+                x = 0.01, 
+                y = 0.99, 
+                bgcolor = 'rgba(0,0,0,0)')
+)
+
+}
+
+fig_dist_arribo
+```
+
+### 
+```{r, fig.width=4, fig.height=4}
+```
+#  Descarga Data{data-navmenu="INDICADORES ESPACIALES"}
+
+Rows
+-------------------------------------
+
+###
+```{r}
+
+current_temp %>% mutate(area_pesca = round(area_pesca, params$n_decimales),
+                        inercia = round(inercia_espacial, params$n_decimales),
+                        latitud = round(latitud, params$n_decimales), 
+                        latitud_maxima = round(cala_latitud_maxima, params$n_decimales),
+                        latitud_minima = round(cala_latitud_min, params$n_decimales),
+                        dist_costa = round(dist_costa, params$n_decimales), 
+                        dist_maxima_zarpe = round(dist_maxima_zarpe, params$n_decimales),
+                        dist_maxima_arribo = round(dist_maxima_arribo, params$n_decimales)) %>%
+  select(temporada, semana, area_pesca, inercia, latitud, latitud_maxima, latitud_minima, dist_costa, dist_maxima_zarpe, dist_maxima_arribo) %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+
+```
+
+
+###
+```{r}
+
+if(!is.null(params$temporada_2)){
+
+current_temp_2 %>% mutate(area_pesca = round(area_pesca, params$n_decimales),
+                        inercia = round(inercia_espacial, params$n_decimales),
+                        latitud = round(latitud, params$n_decimales), 
+                        latitud_maxima = round(cala_latitud_maxima, params$n_decimales),
+                        latitud_minima = round(cala_latitud_min, params$n_decimales),
+                        dist_costa = round(dist_costa, params$n_decimales), 
+                        dist_maxima_zarpe = round(dist_maxima_zarpe, params$n_decimales),
+                        dist_maxima_arribo = round(dist_maxima_arribo, params$n_decimales)) %>%
+  select(temporada, semana, area_pesca, inercia, latitud, latitud_maxima, latitud_minima, dist_costa, dist_maxima_zarpe, dist_maxima_arribo) %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+}
+```
+
+
+
+
+#  Mapa Semanal{data-orientation=rows data-navmenu="MAPAS CALAS"}
+
+
+###
+```{r, fig.width=16, fig.height=16}
+
+mapa_last_day = current_calas
+
+par(mar = c(2,3,1,1), mfrow = c(4,4))
+
+n_weeks = length(unique(mapa_last_day$semana))
+
+labs_semana = mapa_last_day %>% group_by(semana) %>% summarise(semana = unique(semana)) %>% mutate( label = paste0("Semana ", semana), lat = -16, lon = -81)
+
+# labs_semana = mapa_last_day %>% group_by(semana) %>% summarise(max = max(fecha), min = min(fecha)) %>% mutate( label = paste0(min,"\n",max), lat = -16, lon = -81)
+
+for(i in 1:n_weeks){
+  
+  plot_peru(ylim = c(-18,-3.5), font_harbor = 11, land.col = "darkgoldenrod1", xlim = c(-83,-69), area_iso = params$areas)
+  points(x = mapa_last_day[mapa_last_day$semana %in% unique(mapa_last_day$semana)[i],]$longitud,
+         y = mapa_last_day[mapa_last_day$semana %in% unique(mapa_last_day$semana)[i],]$latitud, pch = 19, cex = 0.5, col = alpha("black",0.4))
+  
+  text(x = labs_semana[labs_semana$semana %in% unique(labs_semana$semana)[i],]$lon, 
+       y = labs_semana[labs_semana$semana %in% unique(labs_semana$semana)[i],]$lat, 
+       labels = labs_semana[labs_semana$semana %in% unique(labs_semana$semana)[i],]$label)
+}
+
+
+
+
+
+```
+
+
+#  Mapa semanal {data-orientation=rows data-navmenu="MAPAS SISESAT"}
+
+
+Row
+-------------------------------------
+
+###
+```{r, fig.width=16, fig.height=16}
+
+mapa_calas = current_trayectorias
+
+par(mar = c(2,3,1,1), mfrow = c(4,4))
+
+n_weeks = length(unique(mapa_calas$semana))
+
+labs_semana = mapa_calas %>% group_by(semana) %>% summarise(semana = unique(semana)) %>% mutate( label = paste0("Semana ", semana), lat = -16, lon = -81)
+
+# labs_semana = mapa_calas %>% group_by(semana) %>% summarise(max = max(fecha_arribo), min = min(fecha_arribo)) %>% mutate( label = paste0(min,"\n",max), lat = -16, lon = -81)
+
+for(i in 1:n_weeks){
+  
+  plot_peru(ylim = c(-18,-3.5), font_harbor = 11, land.col = "darkgoldenrod1", xlim = c(-83,-69), area_iso = params$areas)
+  
+  id_viajes = mapa_calas %>% filter(semana %in% labs_semana[labs_semana$semana %in% labs_semana$semana[i],]$semana) %>% reframe(viajes = unique(Cod_Viaje_VMS))
+  
+  mapa_viajes = mapa_calas %>% filter(Cod_Viaje_VMS %in% id_viajes$viajes)
+  
+  for(x in 1:nrow(id_viajes)){
+    
+        lines(x = mapa_viajes[mapa_viajes$Cod_Viaje_VMS %in% unique(mapa_viajes$Cod_Viaje_VMS)[x],]$Lon, 
+          y = mapa_viajes[mapa_viajes$Cod_Viaje_VMS %in% unique(mapa_viajes$Cod_Viaje_VMS)[x],]$Lat, 
+          lwd = 0.8)
+    
+  }
+  
+
+    
+  text(x = labs_semana[labs_semana$semana %in% unique(labs_semana$semana)[i],]$lon, 
+       y = labs_semana[labs_semana$semana %in% unique(labs_semana$semana)[i],]$lat, 
+       labels = labs_semana[labs_semana$semana %in% unique(labs_semana$semana)[i],]$label)
+}
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
