@@ -16,7 +16,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
       }
       if(length(archivos) != 0){
         #for(arc in seq_along(archivos)){ # en esta misma funcion incorporar para que lea el archivo como argumento
-        juntar_vms               = read.csv(archivo_temp)
+        juntar_vms               = read.csv(archivo_temp,fileEncoding = "latin1")
         #juntar_vms        = rbind(vms, juntar_vms)
         #}
         names(juntar_vms) = tolower(names(juntar_vms))
@@ -54,7 +54,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
         print(paste0("#### No hay datos VMS de ",empresas[i],".. ####"))
       }
       if(length(archivos) != 0){
-        juntar_vms  = read.csv(archivos)
+        juntar_vms  = read.csv(archivos,fileEncoding = "latin1")
         #juntar_vms        = rbind(vms, juntar_vms)
         #}
         names(juntar_vms) = tolower(names(juntar_vms))
@@ -89,7 +89,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
         print(paste0("#### No hay datos VMS de ",empresas[i],".. ####"))
       }
       if(length(archivos) != 0){
-        juntar_vms  = read.csv(archivos)
+        juntar_vms  = read.csv(archivos,fileEncoding = "latin1")
         names(juntar_vms) = tolower(names(juntar_vms))
         names(juntar_vms) = c("empresa", "nave", "fecha.y.hora.de.la.posicion", "velocidad", "nombre.de.bandera", "referencia.de.la.baliza", "longitud",
                               "latitud", "rumbo", "puerto", "rumbo.promedio")
@@ -127,7 +127,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
         print(paste0("#### No hay datos VMS de ",empresas[i],".. ####"))
       }
       if(length(archivos) != 0){
-        juntar_vms  = read.csv(archivos)
+        juntar_vms  = read.csv(archivos,fileEncoding = "latin1")
         names(juntar_vms) = tolower(names(juntar_vms))
         names(juntar_vms) = c("flota", "codigo", "embarcacion", "matricula", "fecha", "hora", "longitud", "latitud", "velocidad", "rumbo")
         juntar_vms$fecha.y.hora.de.la.posicion = paste0(juntar_vms$fecha, " ",juntar_vms$hora)
@@ -164,7 +164,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
         print(paste0("#### No hay datos VMS de ",empresas[i],".. ####"))
       }
       if(length(archivos) != 0){
-        juntar_vms  = read.csv(archivos)
+        juntar_vms  = read.csv(archivos,fileEncoding = "latin1")
         names(juntar_vms) = tolower(names(juntar_vms))
         names(juntar_vms) = c("nave", "n..imo", "referencia.baliza.activa","latitud","longitud","rumbo",
                               "velocidad", "fecha.y.hora.de.la.posicion","referencia",
@@ -202,7 +202,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
         print(paste0("#### No hay datos VMS de ",empresas[i],".. ####"))
       }
       if(length(archivos) != 0){
-        juntar_vms  = read.csv(archivos)         #  juntar_vms        = rbind(vms, juntar_vms)
+        juntar_vms  = read.csv(archivos,fileEncoding = "latin1")         #  juntar_vms        = rbind(vms, juntar_vms)
         names(juntar_vms) = tolower(names(juntar_vms))
         names(juntar_vms) = c("FLOTA", "EMBARCACION", "MATRICULA", "FECHA", "HORA", "LONGITUD",
                               "LATITUD","VELOCIDAD", "RUMBO")
@@ -236,7 +236,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
         print(paste0("#### No hay datos VMS de ",empresas[i],".. ####"))
       }
       if(length(archivos) != 0){
-        juntar_vms  = read.csv(archivos)
+        juntar_vms  = read.csv(archivos,fileEncoding = "latin1")
         names(juntar_vms) = iconv(names(juntar_vms),to="ASCII//TRANSLIT")
         juntar_vms$Fecha.de.la.posicion = paste0(juntar_vms$Fecha.de.la.posicion, " ", juntar_vms$Hora.de.la.posicion)
         juntar_vms$Longitud = get_longitud(juntar_vms$Longitud)
@@ -287,7 +287,7 @@ procesar_vms <- function(temporada = temporada, dir_data = dir_data, empresas = 
         print(paste0("#### No hay datos VMS de ",empresas[i],".. ####"))
       }
       if(length(archivos) != 0){
-        juntar_vms  = read.csv(archivos)
+        juntar_vms  = read.csv(archivos,fileEncoding = "latin1")
 
 
         names(juntar_vms) = tolower(names(juntar_vms))
