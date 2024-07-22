@@ -14,3 +14,18 @@ get_longitud <- function(x){
 
   return(suppressWarnings(out))
 }
+
+get_longitud_2=
+  function (x)
+  {
+    x <- as.character(x)
+    lon <- substring(x, 1, 3)
+    lon <- as.numeric(gsub("\\D", "", lon))
+    min <- substring(x, 6, 7)
+    min <- as.numeric(gsub("\\D", "", min))
+    seg <- substring(x, 9, 13)
+    seg <- suppressWarnings(as.numeric(sub(",", ".", seg)))
+    seg[is.na(seg)] <- 0
+    out <- (lon + (min + seg/60)/60) * -1
+    return(suppressWarnings(out))
+  }
