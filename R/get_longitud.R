@@ -37,7 +37,7 @@ get_longitud_3=
     lon <- substring(x, 1, 3)
     lon <- as.numeric(gsub("\\D", "", lon))
     min <- substring(x, 5, 10)
-    min <- as.numeric(gsub("\\D", "", min))
+    min <- as.numeric(min)
     lon[is.na(lon)] <- 0
     min[is.na(min)] <- 0
     out <- (lon + (min)/60) * -1
