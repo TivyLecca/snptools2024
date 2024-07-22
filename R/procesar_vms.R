@@ -14,13 +14,13 @@ prcocesar_vms=function (temporada = temporada, dir_data = dir_data, empresas = e
       }
       if (length(archivos) != 0) {
         juntar_vms = read.csv(archivos, fileEncoding = "latin1")
-        names(juntar_vms) = tolower(names(juntar_vms))
+        names(juntar_vms) = tolower(names(juntar_vms))#tolower sirve para pasar de mayuscula a minuscula
         names(juntar_vms) = c("nombre", "latitud", "longitud",
                               "rumbo", "velocidad", "referencia", "hora",
                               "fechahora", "fecha", "guardar.marca.de.tiempo",
                               "dispositivo.de.retardo.guardado", "rumbo.promedio")
         juntar_vms = juntar_vms[, c("nombre", "latitud", "longitud", "fechahora")]
-        juntar_vms$Lon = get_longitud(juntar_vms$longitud) #revisar si queda como version 1 o 2
+        juntar_vms$Lon = get_longitud_3(juntar_vms$longitud) #revisar si queda como version 1 o 2
         juntar_vms$Lat = get_latitud(juntar_vms$latitud)
         if(nchar(juntar_vms$fechahora[1])<= 16)
         {juntar_vms$Date = strptime(paste0(juntar_vms$fechahora,":00"),
