@@ -295,8 +295,8 @@ prcocesar_vms=function (temporada = temporada, dir_data = dir_data, empresas = e
                              "Retraso.Proveedor.Recepcion"," Retraso.recibido.guardado","ID.zona.de.la.baliza")
 
         juntar_vms$Fecha.de.la.posicion = paste0(juntar_vms$Fecha.de.la.posicion,  " ", juntar_vms$Hora.de.la.posicion)
-        juntar_vms$Longitud = get_longitud_2(juntar_vms$Longitud)
-        juntar_vms$Latitud = get_latitud_2(juntar_vms$Latitud)
+        juntar_vms$Longitud = get_longitud(juntar_vms$Longitud)
+        juntar_vms$Latitud = get_latitud(juntar_vms$Latitud)
 
 
         if(nchar(juntar_vms$Fecha.de.la.posicion[1])<=16){
