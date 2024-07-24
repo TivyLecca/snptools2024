@@ -303,6 +303,8 @@ prcocesar_vms=function (temporada = temporada, dir_data = dir_data, empresas = e
           juntar_vms$Date = strptime(paste0(juntar_vms$Fecha.de.la.posicion,":00"), format = "%d/%m/%Y %H:%M:%S")
         }else{
           juntar_vms$Date = strptime(juntar_vms$Fecha.de.la.posicion, format = "%d/%m/%Y %I:%M:%S %p")
+          # Convertir a formato de 24 horas
+          juntar_vms$Date <- format(juntar_vms$Date, format = "%d/%m/%Y %H:%M:%S")
         }
 
 
