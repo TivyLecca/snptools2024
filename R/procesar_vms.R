@@ -302,7 +302,7 @@ prcocesar_vms=function (temporada = temporada, dir_data = dir_data, empresas = e
         if(nchar(juntar_vms$Fecha.de.la.posicion[1])<=16){
           juntar_vms$Date = strptime(paste0(juntar_vms$Fecha.de.la.posicion,":00"), format = "%d/%m/%Y %H:%M:%S")
         }else{
-          juntar_vms$Date = strptime(juntar_vms$Fecha.de.la.posicion, format = "%d/%m/%Y %H:%M:%S")
+          juntar_vms$Date = strptime(juntar_vms$Fecha.de.la.posicion, format = "%d/%m/%Y %I:%M:%S %p")
         }
 
 
