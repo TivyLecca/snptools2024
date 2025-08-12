@@ -18,7 +18,7 @@ obtener_descargas = function(dir_data = dir_data, descargas = NULL, empresas = e
     if(!is.null(descargas)){
       existe_archivo = archivos[archivos %in% descargas]
       if(length(existe_archivo)==1){
-        all_descargas   = read.csv(descargas, sep=";",fileEncoding = "latin1")
+        all_descargas   = read.csv(descargas,fileEncoding = "latin1")
         names(all_descargas) = c( "X","N.","ID" ,"Puerto" ,"Planta", "Armador", "Embarcacion", "CBO" ,
                      "Matricula" ,"Especie","Tolva", "Nro..Reporte", "TM.Descargadas","TM.Declarado","Acta.de.EIP","Fecha" ,
                      "Hora.Inicio","Hora.Termino" ,"Supervisora" ,"Mes","Zona","temporada","anho" )
@@ -30,7 +30,7 @@ obtener_descargas = function(dir_data = dir_data, descargas = NULL, empresas = e
 
     }else{
       for(ii in archivos){
-        files_descargas = read.csv(ii,sep";", fileEncoding = "latin1")
+        files_descargas = read.csv(ii, fileEncoding = "latin1")
         all_descargas   = rbind(files_descargas, all_descargas)
         names(all_descargas) = c( "X","N.","ID" ,"Puerto" ,"Planta", "Armador", "Embarcacion", "CBO" ,
                                   "Matricula" ,"Especie","Tolva", "Nro..Reporte", "TM.Descargadas","TM.Declarado","Acta.de.EIP","Fecha" ,
