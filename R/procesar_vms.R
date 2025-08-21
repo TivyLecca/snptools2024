@@ -147,7 +147,7 @@ prcocesar_vms=function (temporada = temporada, dir_data = dir_data, empresas = e
                      ".. ####"))
       }
       if (length(archivos) != 0) {
-        juntar_vms = read.csv(archivos, sep=";",fileEncoding = "latin1")
+        juntar_vms = read.csv(archivos,fileEncoding = "latin1")
         names(juntar_vms) = tolower(names(juntar_vms))
         names(juntar_vms) = c("flota", "codigo", "embarcacion",
                               "matricula", "fecha", "hora", "longitud", "latitud",
@@ -192,7 +192,7 @@ prcocesar_vms=function (temporada = temporada, dir_data = dir_data, empresas = e
                      ".. ####"))
       }
       if (length(archivos) != 0) {
-        juntar_vms = read.csv(archivos, sep = ";", fileEncoding = "latin1")
+        juntar_vms = read.csv(archivos, fileEncoding = "latin1")
         names(juntar_vms) = tolower(names(juntar_vms))
         names(juntar_vms) = c("nave", "n..imo", "referencia.baliza.activa",
                               "latitud", "longitud", "rumbo", "velocidad",
@@ -243,7 +243,7 @@ prcocesar_vms=function (temporada = temporada, dir_data = dir_data, empresas = e
                      ".. ####"))
       }
       if (length(archivos) != 0) {
-        juntar_vms = read.csv(archivos, sep = ";", fileEncoding = "latin1")
+        juntar_vms = read.csv(archivos, fileEncoding = "latin1")
         names(juntar_vms) = tolower(names(juntar_vms))
         names(juntar_vms) = c("FLOTA", "EMBARCACION", "MATRICULA", "FECHA", "HORA", "LONGITUD", "LATITUD", "VELOCIDAD", "RUMBO")
         juntar_vms$FECHA_HORA = paste0(juntar_vms$FECHA, " ", juntar_vms$HORA)
